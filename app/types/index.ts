@@ -37,6 +37,29 @@ export interface ErrorResponse {
 }
 
 // Subscription Types
+export interface PlanVariation {
+  id: number;
+  created_at: number;
+  object_id: string;
+  plan_id: string;
+  name: string;
+  version: number;
+  status: string;
+  cadence: string;
+  amount: number;
+  type: string;
+  business_id: string;
+  credit: number;
+  credit_charge_amount: number;
+  description: string;
+  tax_percentage: number;
+  gift_credit: number;
+  gift_credit_charge_amount: number;
+  image_link: string;
+  daily_redemption_active: boolean;
+  redemption_quantity: number;
+}
+
 export interface UserSubscription {
   id: number;
   created_at: number;
@@ -57,6 +80,9 @@ export interface UserSubscription {
   available_credit: number;
   gift_credit: number;
   subscription_amount: number;
+  daily_redemption_active: boolean;
+  redemption_quantity: number;
+  plan_variation?: PlanVariation;
 }
 
 // User Preferences Types
