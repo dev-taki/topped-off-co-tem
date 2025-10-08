@@ -397,7 +397,8 @@ export default function SquarePaymentForm({ planVariationId, amount, onSuccess, 
       // Don't destroy Square on every render - only on unmount
       // This prevents the refresh issue
     };
-  }, []); // Remove dependencies to prevent multiple initializations
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intentionally empty to prevent multiple Square SDK initializations
 
   // Separate cleanup effect that only runs on unmount
   useEffect(() => {
