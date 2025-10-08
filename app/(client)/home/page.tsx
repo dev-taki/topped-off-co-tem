@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Plus, Calendar, CreditCard, Users, Home, Gift, User, Clock } from 'lucide-react';
+import { Plus, Calendar, CreditCard, Users, Home, User, Clock, Gift } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { useRouter } from 'next/navigation';
 import { fetchUserSubscriptions } from '../../store/slices/subscriptionSlice';
@@ -88,15 +88,20 @@ export default function HomePage() {
               {userSubscriptions
                 .filter(sub => sub.status === 'ACTIVE')
                 .map((subscription) => (
-                  <div key={subscription.id} className="rounded-xl p-4 border" style={{ backgroundColor: '#DCFCE7', borderColor: COLORS.success.main }}>
-                    <div className="flex items-center justify-between mb-3">
+                  <div key={subscription.id} className="rounded-xl p-5 border" style={{ backgroundColor: '#DCFCE7', borderColor: COLORS.success.main }}>
+                    {/* Header with Plan Name and Status */}
+                    <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#DCFCE7' }}>
-                          <CreditCard className="h-5 w-5" style={{ color: COLORS.success.main }} />
+                        <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: COLORS.success.main }}>
+                          <CreditCard className="h-6 w-6" style={{ color: COLORS.success.text }} />
                         </div>
                         <div>
-                          <h3 className="font-semibold" style={{ color: COLORS.text.primary }}>Active Subscription</h3>
-                          <p className="text-sm" style={{ color: COLORS.text.secondary }}>Started {new Date(subscription.start_date).toLocaleDateString()}</p>
+                          <h3 className="font-bold text-lg" style={{ color: COLORS.text.primary }}>
+                            {subscription.plan_variation?.name || 'Subscription Plan'}
+                          </h3>
+                          <p className="text-sm" style={{ color: COLORS.text.secondary }}>
+                            {subscription.cadence.charAt(0) + subscription.cadence.slice(1).toLowerCase()} • ${(subscription.subscription_amount / 100).toFixed(2)}/{subscription.cadence === 'DAILY' ? 'day' : subscription.cadence === 'WEEKLY' ? 'week' : subscription.cadence === 'MONTHLY' ? 'month' : subscription.cadence === 'YEARLY' ? 'year' : 'period'}
+                          </p>
                         </div>
                       </div>
                       <span className="px-3 py-1 text-xs rounded-full font-medium" style={{ backgroundColor: COLORS.success.main, color: COLORS.success.text }}>
@@ -104,26 +109,114 @@ export default function HomePage() {
                       </span>
                     </div>
                     
-                    {/* Credits Display */}
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div className="rounded-lg p-3 border" style={{ backgroundColor: COLORS.background.primary, borderColor: COLORS.success.main }}>
-                        <div className="flex items-center space-x-2">
-                          <CreditCard className="h-4 w-4" style={{ color: COLORS.success.main }} />
-                          <span className="text-sm font-medium" style={{ color: COLORS.text.secondary }}>Subscriber Credits</span>
-                        </div>
-                        <div className="text-xl font-bold mt-1" style={{ color: COLORS.text.primary }}>{subscription.available_credit}</div>
+                    {/* Variation Image */}
+                    {(subscription.plan_variation as any)?.image_link && (subscription.plan_variation as any).image_link.trim() !== '' && (
+                      <div className="mb-4">
+                        <img 
+                          src={(subscription.plan_variation as any).image_link} 
+                          alt={subscription.plan_variation?.name || 'Plan variation'} 
+                          className="w-full h-48 object-cover rounded-lg border"
+                          style={{ borderColor: COLORS.border.primary }}
+                          onError={(e) => {
+                            // Hide image if it fails to load
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
                       </div>
+                    )}
+                    
+                    {/* Plan Description */}
+                    {subscription.plan_variation?.description && (
+                      <div 
+                        className="mb-4 text-sm rounded-lg p-3" 
+                        style={{ backgroundColor: COLORS.background.primary, color: COLORS.text.secondary }}
+                        dangerouslySetInnerHTML={{ __html: subscription.plan_variation.description }}
+                      />
+                    )}
+                    
+                    {/* Credits Display */}
+                    <div className={`${subscription.plan_variation?.gift_credit ? 'grid grid-cols-2 gap-3' : ''} mb-4`}>
                       <div className="rounded-lg p-3 border" style={{ backgroundColor: COLORS.background.primary, borderColor: COLORS.success.main }}>
-                        <div className="flex items-center space-x-2">
-                          <Users className="h-4 w-4" style={{ color: COLORS.success.main }} />
-                          <span className="text-sm font-medium" style={{ color: COLORS.text.secondary }}>Guest Credits</span>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <CreditCard className="h-4 w-4" style={{ color: COLORS.success.main }} />
+                          <span className="text-xs font-medium" style={{ color: COLORS.text.secondary }}>Subscriber Credits</span>
                         </div>
-                        <div className="text-xl font-bold mt-1" style={{ color: COLORS.text.primary }}>{subscription.gift_credit}</div>
+                        <div className="text-2xl font-bold" style={{ color: COLORS.text.primary }}>{subscription.available_credit}</div>
+                        <p className="text-xs mt-1" style={{ color: COLORS.text.secondary }}>
+                          {subscription.plan_variation?.credit && `${subscription.plan_variation.credit} included`}
+                        </p>
+                      </div>
+                      
+                      {/* Gift Credits - Only show if actual gift_credit > 0 */}
+                      {subscription.gift_credit > 0 && (
+                        <div className="rounded-lg p-3 border" style={{ backgroundColor: COLORS.background.primary, borderColor: COLORS.success.main }}>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <Gift className="h-4 w-4" style={{ color: COLORS.success.main }} />
+                            <span className="text-xs font-medium" style={{ color: COLORS.text.secondary }}>Guest Credits</span>
+                          </div>
+                          <div className="text-2xl font-bold" style={{ color: COLORS.text.primary }}>{subscription.gift_credit}</div>
+                          <p className="text-xs mt-1" style={{ color: COLORS.text.secondary }}>
+                            {subscription.plan_variation?.gift_credit && `${subscription.plan_variation.gift_credit} included`}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Daily Redemption Status */}
+                    {subscription.daily_redemption_active && (
+                      <div className="rounded-lg p-3 border mb-4" style={{ backgroundColor: COLORS.background.primary, borderColor: COLORS.primary.main }}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Clock className="h-4 w-4" style={{ color: COLORS.primary.main }} />
+                            <span className="text-sm font-medium" style={{ color: COLORS.text.primary }}>Daily Redemption:</span>
+                          </div>
+                          <span className="text-sm font-bold" style={{ color: COLORS.primary.main }}>
+                            {subscription.redemption_quantity}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Subscription Dates */}
+                    <div className="flex items-center justify-between text-xs pt-3 border-t" style={{ borderColor: COLORS.border.primary }}>
+                      <div>
+                        <span style={{ color: COLORS.text.secondary }}>Started: </span>
+                        <span style={{ color: COLORS.text.primary }} className="font-medium">
+                          {new Date(subscription.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                      <div>
+                        <span style={{ color: COLORS.text.secondary }}>Renews: </span>
+                        <span style={{ color: COLORS.text.primary }} className="font-medium">
+                          {new Date(subscription.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
                       </div>
                     </div>
                   </div>
                 ))}
             </div>
+          </div>
+        )}
+
+        {/* No Active Subscriptions */}
+        {(!userSubscriptions || userSubscriptions.filter(sub => sub.status === 'ACTIVE').length === 0) && !subscriptionsLoading && (
+          <div className="rounded-xl p-6 shadow-sm border mb-6 text-center" style={{ backgroundColor: COLORS.background.primary, borderColor: COLORS.border.primary }}>
+            <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: COLORS.secondary.main + '20' }}>
+              <Calendar className="h-8 w-8" style={{ color: COLORS.secondary.main }} />
+            </div>
+            <h3 className="text-lg font-semibold mb-2" style={{ color: COLORS.text.primary }}>No Active Subscriptions</h3>
+            <p className="text-sm mb-4" style={{ color: COLORS.text.secondary }}>
+              Subscribe to a membership plan to unlock exclusive benefits and credits!
+            </p>
+            <button 
+              onClick={() => router.push('/plans')}
+              className="px-6 py-2 rounded-lg font-medium transition-colors"
+              style={{ backgroundColor: COLORS.secondary.main, color: COLORS.success.text }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+            >
+              View Available Plans
+            </button>
           </div>
         )}
 
@@ -159,7 +252,7 @@ export default function HomePage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className={`grid gap-4 ${userSubscriptions?.some(sub => sub.plan_variation?.gift_credit) ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <div className="rounded-xl p-4 text-center shadow-sm border" style={{ backgroundColor: COLORS.background.primary, borderColor: COLORS.border.primary }}>
             <div className="text-2xl font-bold mb-1" style={{ color: COLORS.text.primary }}>
               {userSubscriptions ? userSubscriptions.reduce((total, sub) => total + sub.available_credit + sub.gift_credit, 0) : 0}
@@ -172,12 +265,14 @@ export default function HomePage() {
             </div>
             <div className="text-xs" style={{ color: COLORS.text.secondary }}>Subscriber Credits</div>
           </div>
-          <div className="rounded-xl p-4 text-center shadow-sm border" style={{ backgroundColor: COLORS.background.primary, borderColor: COLORS.border.primary }}>
-            <div className="text-2xl font-bold mb-1" style={{ color: COLORS.text.primary }}>
-              {userSubscriptions ? userSubscriptions.reduce((total, sub) => total + sub.gift_credit, 0) : 0}
+          {userSubscriptions?.some(sub => sub.plan_variation?.gift_credit) && (
+            <div className="rounded-xl p-4 text-center shadow-sm border" style={{ backgroundColor: COLORS.background.primary, borderColor: COLORS.border.primary }}>
+              <div className="text-2xl font-bold mb-1" style={{ color: COLORS.text.primary }}>
+                {userSubscriptions ? userSubscriptions.reduce((total, sub) => total + sub.gift_credit, 0) || "" : ""}
+              </div>
+              <div className="text-xs" style={{ color: COLORS.text.secondary }}>Guest Credits</div>
             </div>
-            <div className="text-xs" style={{ color: COLORS.text.secondary }}>Guest Credits</div>
-          </div>
+          )}
         </div>
       </div>
 
